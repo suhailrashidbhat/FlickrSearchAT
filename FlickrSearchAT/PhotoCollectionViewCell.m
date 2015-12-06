@@ -12,7 +12,6 @@
 
 -(void)awakeFromNib {
     self.activityIndicator = [[DGActivityIndicatorView alloc] initWithType:DGActivityIndicatorAnimationTypeBallScaleMultiple];
-    //self.activityIndicator.frame = self.frame;
     self.activityIndicator.center = self.center;
     self.activityIndicator.tintColor = UIColorFromRGB(0x2398B5);
     [self addSubview:self.activityIndicator];

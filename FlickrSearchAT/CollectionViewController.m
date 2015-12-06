@@ -70,7 +70,17 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.view addSubview:self.indicatorView];
     [self.indicatorView startAnimating];
 
+    NSDictionary *attributes = @{
+                                 NSUnderlineStyleAttributeName: @1,
+                                 NSForegroundColorAttributeName : UIColorFromRGB(0x2398B5),
+                                 NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue-Bold" size:14]
+                                 };
+    self.title = @"Flickr Search";
+
+    [self.navigationController.navigationBar setTitleTextAttributes:attributes];
     self.navigationController.navigationBarHidden = NO;
+
+    [self.navigationController.navigationBar setTintColor:UIColorFromRGB(0x2398B5)];
     self.view.backgroundColor = [UIColor whiteColor];
     self.collectionView.backgroundColor = [UIColor whiteColor];
 }
@@ -143,14 +153,19 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     PhotoCollectionViewCell *cell = (PhotoCollectionViewCell*)[collectionView dequeueReusableCellWithReuseIdentifier:kCellIdentifier forIndexPath:indexPath];
     [cell.activityIndicator startAnimating];
     NSURL *photoURL = self.photos[indexPath.item];
-    
+    UIColor *randomRGBColor = [[UIColor alloc] initWithRed:arc4random()%256/256.0
+                                                     green:arc4random()%256/256.0
+                                                      blue:arc4random()%256/256.0
+                                                     alpha:0.5];
+    cell.backgroundColor = randomRGBColor;
+    [cell.imageView setHidden:YES];
     [cell.imageView sd_setImageWithURL:photoURL completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
         [cell.activityIndicator stopAnimating];
+        [cell.imageView setHidden:NO];
+        [cell.imageView setBackgroundColor:[UIColor blackColor]];
     }];
-    cell.imageView.backgroundColor = [UIColor blackColor];
     return cell;
 }
-
 
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
     [collectionView deselectItemAtIndexPath:indexPath animated:YES];
