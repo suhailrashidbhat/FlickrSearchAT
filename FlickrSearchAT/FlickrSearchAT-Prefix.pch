@@ -1,0 +1,17 @@
+//
+//  FlickrSearchAT-Prefix.pch
+//  FlickrSearchAT
+//
+//  Created by Suhail Bhat on 06/12/15.
+//  Copyright © 2015 SRB. All rights reserved.
+//
+
+#ifndef FlickrSearchAT_Prefix_pch
+#define FlickrSearchAT_Prefix_pch
+
+// Include any system framework and library headers here that should be included in all compilation units.
+// You will also need to set the Prefix Header build setting of one or more of your targets to reference this file.
+#import "Constants.h"
+
+#endif /* FlickrSearchAT_Prefix_pch */
+
