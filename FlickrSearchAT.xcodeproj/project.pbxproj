@@ -16,6 +16,7 @@
 		00674A2F1C141AC4004C53DC /* CollectionViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 00674A2E1C141AC4004C53DC /* CollectionViewController.m */; };
 		00674A331C141BC8004C53DC /* PhotoCollectionViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 00674A321C141BC8004C53DC /* PhotoCollectionViewCell.m */; };
 		00674A361C1429D5004C53DC /* FlickrManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 00674A351C1429D5004C53DC /* FlickrManager.m */; };
+		00E7B05A1C14D25C00C01AF2 /* ImageViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E7B0591C14D25C00C01AF2 /* ImageViewController.m */; };
 		4ECF0E132A8EA34697C0F010 /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 982F753DEFA902BD7D8D1EA0 /* libPods.a */; };
 /* End PBXBuildFile section */
 
@@ -38,6 +39,8 @@
 		00674A351C1429D5004C53DC /* FlickrManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = FlickrManager.m; path = ../FlickrManager.m; sourceTree = "<group>"; };
 		00E7B0561C149FF000C01AF2 /* Constants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Constants.h; sourceTree = "<group>"; };
 		00E7B0571C14A0CE00C01AF2 /* FlickrSearchAT-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "FlickrSearchAT-Prefix.pch"; sourceTree = "<group>"; };
+		00E7B0581C14D25C00C01AF2 /* ImageViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ImageViewController.h; sourceTree = "<group>"; };
+		00E7B0591C14D25C00C01AF2 /* ImageViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ImageViewController.m; sourceTree = "<group>"; };
 		93F18F15D798AA4819D58EA0 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 		982F753DEFA902BD7D8D1EA0 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9A3C277EF7AE516C961D069 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
@@ -101,6 +104,8 @@
 		00674A301C141ACB004C53DC /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				00E7B0581C14D25C00C01AF2 /* ImageViewController.h */,
+				00E7B0591C14D25C00C01AF2 /* ImageViewController.m */,
 				00674A2D1C141AC4004C53DC /* CollectionViewController.h */,
 				00674A2E1C141AC4004C53DC /* CollectionViewController.m */,
 				00674A1C1C140BE8004C53DC /* ViewController.h */,
@@ -272,6 +277,7 @@
 				00674A361C1429D5004C53DC /* FlickrManager.m in Sources */,
 				00674A1B1C140BE8004C53DC /* AppDelegate.m in Sources */,
 				00674A331C141BC8004C53DC /* PhotoCollectionViewCell.m in Sources */,
+				00E7B05A1C14D25C00C01AF2 /* ImageViewController.m in Sources */,
 				00674A181C140BE8004C53DC /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

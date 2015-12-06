@@ -10,14 +10,6 @@
 
 @implementation PhotoCollectionViewCell
 
--(instancetype)initWithCoder:(NSCoder *)aDecoder {
-    if (self = [super initWithCoder:aDecoder]) {
-
-    }
-    return self;
-}
-
-
 -(void)awakeFromNib {
     self.activityIndicator = [[DGActivityIndicatorView alloc] initWithType:DGActivityIndicatorAnimationTypeBallScaleMultiple];
     //self.activityIndicator.frame = self.frame;

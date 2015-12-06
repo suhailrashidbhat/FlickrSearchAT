@@ -12,7 +12,7 @@
 #import <SDWebImage/UIImageView+WebCache.h>
 #import <DGActivityIndicatorView/DGActivityIndicatorView.h>
 #import <SVPullToRefresh/SVPullToRefresh.h>
-
+#import "ImageViewController.h"
 
 static NSString* const kCellIdentifier = @"PhotoCell";
 static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=3e7cc266ae2b0e0d78e279ce8e361736&format=json&nojsoncallback=1&text=kittens";
@@ -54,6 +54,11 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
         }
     }];
 
+    __weak CollectionViewController *weakSelf = self;
+    [self.collectionView addInfiniteScrollingWithActionHandler:^{
+        [weakSelf fetchMoreImages];
+    }];
+
     if ([[NSUserDefaults standardUserDefaults] objectForKey:@"recentSearch"]) {
         self.recentArray =  [[[NSUserDefaults standardUserDefaults] objectForKey:@"recentSearch"] mutableCopy];
     }
@@ -64,11 +69,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     self.indicatorView.frame = self.view.frame;
     [self.view addSubview:self.indicatorView];
     [self.indicatorView startAnimating];
-
-    __weak CollectionViewController *weakSelf = self;
-    [self.collectionView addInfiniteScrollingWithActionHandler:^{
-        [weakSelf fetchMoreImages];
-    }];
 
     self.navigationController.navigationBarHidden = NO;
     self.view.backgroundColor = [UIColor whiteColor];
@@ -81,12 +81,15 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self addSearchBar];
 }
 
+-(void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+}
+
 -(void)deviceRotated {
-    if (UIDeviceOrientationIsLandscape([UIDevice currentDevice].orientation)) {
-        [self.searchBar setFrame:CGRectMake(0,self.searchBarBoundsY,[UIScreen mainScreen].bounds.size.width, 44)];
-    } else {
-        [self.searchBar setFrame:CGRectMake(0,self.searchBarBoundsY,[UIScreen mainScreen].bounds.size.width, 44)];
-    }
+    self.indicatorView.frame = self.view.frame;
+    [self.view addSubview:self.indicatorView];
+    [self.searchBar setFrame:CGRectMake(0,self.searchBarBoundsY,[UIScreen mainScreen].bounds.size.width, 44)];
     [self.collectionView reloadData];
 }
 
@@ -123,15 +126,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     // Dispose of any resources that can be recreated.
 }
 
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-}
-*/
 
 #pragma mark <UICollectionViewDataSource>
 
@@ -155,6 +149,14 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     }];
     cell.imageView.backgroundColor = [UIColor blackColor];
     return cell;
+}
+
+
+-(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+    [collectionView deselectItemAtIndexPath:indexPath animated:YES];
+    ImageViewController *imageController = [self.storyboard instantiateViewControllerWithIdentifier:@"ImageViewController"];
+    imageController.photoURL = self.photos[indexPath.row];
+    [self.navigationController pushViewController:imageController animated:YES];
 }
 
 #pragma mark -  <UICollectionViewDelegateFlowLayout>
@@ -325,7 +327,7 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     } else if ((scrollOffset + scrollHeight) >= scrollContentSizeHeight) {
         frame.origin.y = -size;
     } else {
-        frame.origin.y = MIN(20, MAX(-size, frame.origin.y - scrollDiff));
+        frame.origin.y = MIN(20, MAX(-size, frame.origin.y - (frame.size.height * (scrollDiff / scrollHeight))));
     }
 
     [self.navigationController.navigationBar setFrame:frame];
