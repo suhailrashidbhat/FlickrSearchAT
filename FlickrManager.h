@@ -18,5 +18,6 @@ typedef void(^dataFetchCompletionBlock)(NSMutableArray*, NSError*);
 
 + (id)sharedManager;
 - (void)fetchDataForText:(NSString*)searchString completionBlock:(dataFetchCompletionBlock)completion;
+- (void)fetchNextPageDataForText:(NSString *)searchString completionBlock:(dataFetchCompletionBlock)completion;
 
 @end

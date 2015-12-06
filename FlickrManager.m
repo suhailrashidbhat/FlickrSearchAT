@@ -10,7 +10,7 @@
 
 
 static NSString *const kFlickrAPIKey = @"ffce5722188b15182473626a96decc2c";
-static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=%@&format=json&nojsoncallback=1&text=%@&page=%lu&per_page=50";
+static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=%@&format=json&nojsoncallback=1&text=%@&page=%lu&per_page=51";
 
 @implementation FlickrManager
 
@@ -32,6 +32,18 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
 }
 
 - (void)fetchDataForText:(NSString *)searchString completionBlock:(dataFetchCompletionBlock)completion {
+    self.lastFetchedPageIndex = 1;
+    NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:kFlickrSearchURL, kFlickrAPIKey, searchString, self.lastFetchedPageIndex]];
+    NSLog(requestURL.description);
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:requestURL completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleResponse:response data:data error:error completion:completion];
+        });
+    }];
+    [task resume];
+}
+
+- (void)fetchNextPageDataForText:(NSString *)searchString completionBlock:(dataFetchCompletionBlock)completion {
 
     NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:kFlickrSearchURL, kFlickrAPIKey, searchString, (unsigned long)++self.lastFetchedPageIndex]];
     NSLog(requestURL.description);

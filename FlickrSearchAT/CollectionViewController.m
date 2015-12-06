@@ -10,21 +10,24 @@
 #import "PhotoCollectionViewCell.h"
 #import "FlickrManager.h"
 #import <SDWebImage/UIImageView+WebCache.h>
-#import <SDWebImage/SDWebImageManager.h>
-#import <UIActivityIndicator-for-SDWebImage/UIImageView+UIActivityIndicatorForSDWebImage.h>
 #import <DGActivityIndicatorView/DGActivityIndicatorView.h>
+#import <SVPullToRefresh/SVPullToRefresh.h>
+
 
 static NSString* const kCellIdentifier = @"PhotoCell";
 static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=3e7cc266ae2b0e0d78e279ce8e361736&format=json&nojsoncallback=1&text=kittens";
 
-@interface CollectionViewController ()<UISearchBarDelegate>
+@interface CollectionViewController ()<UISearchBarDelegate, UIScrollViewDelegate>
 
 @property (nonatomic,strong) NSMutableArray        *photos; // URLs
 @property (nonatomic)        BOOL           searchBarActive;
 @property (nonatomic)        float          searchBarBoundsY;
 @property (nonatomic,strong) UISearchBar        *searchBar;
 @property (nonatomic, assign) NSUInteger lastPageIndex;
-@property (nonatomic, strong) SDWebImageManager *imageDownloader;
+@property (nonatomic, strong) NSMutableArray *recentArray;
+@property (nonatomic, strong) DGActivityIndicatorView *indicatorView;
+@property (nonatomic, strong) NSString *lastSearchQuery;
+@property (nonatomic) CGFloat previousScrollViewYOffset;
 
 @property NSCache *cache;
 
@@ -35,10 +38,14 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 - (void)viewDidLoad {
     [super viewDidLoad];
 
+    [self initializeUI];
+
     self.cache = [[NSCache alloc] init];
     self.photos = [NSMutableArray array];
-    self.imageDownloader = [SDWebImageManager sharedManager];
+
     [[FlickrManager sharedManager] fetchDataForText:@"love" completionBlock:^(NSMutableArray *photoURLs, NSError *error) {
+        [self.indicatorView stopAnimating];
+        [self.indicatorView setHidden:YES];
         if (error) {
             [self showRetryAlertWithError:error];
         } else {
@@ -46,6 +53,23 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
             [self.collectionView reloadData];
         }
     }];
+
+    if ([[NSUserDefaults standardUserDefaults] objectForKey:@"recentSearch"]) {
+        self.recentArray =  [[[NSUserDefaults standardUserDefaults] objectForKey:@"recentSearch"] mutableCopy];
+    }
+}
+
+-(void)initializeUI {
+    self.indicatorView = [[DGActivityIndicatorView alloc] initWithType:DGActivityIndicatorAnimationTypeBallScaleMultiple tintColor:UIColorFromRGB(0x2398B5)];
+    self.indicatorView.frame = self.view.frame;
+    [self.view addSubview:self.indicatorView];
+    [self.indicatorView startAnimating];
+
+    __weak CollectionViewController *weakSelf = self;
+    [self.collectionView addInfiniteScrollingWithActionHandler:^{
+        [weakSelf fetchMoreImages];
+    }];
+
     self.navigationController.navigationBarHidden = NO;
     self.view.backgroundColor = [UIColor whiteColor];
     self.collectionView.backgroundColor = [UIColor whiteColor];
@@ -53,7 +77,40 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
 -(void)viewWillAppear:(BOOL)animated{
     [super viewWillAppear:animated];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceRotated) name:UIDeviceOrientationDidChangeNotification object:nil];
     [self addSearchBar];
+}
+
+-(void)deviceRotated {
+    if (UIDeviceOrientationIsLandscape([UIDevice currentDevice].orientation)) {
+        [self.searchBar setFrame:CGRectMake(0,self.searchBarBoundsY,[UIScreen mainScreen].bounds.size.width, 44)];
+    } else {
+        [self.searchBar setFrame:CGRectMake(0,self.searchBarBoundsY,[UIScreen mainScreen].bounds.size.width, 44)];
+    }
+    [self.collectionView reloadData];
+}
+
+-(void)fetchMoreImages{
+    [[FlickrManager sharedManager] fetchNextPageDataForText:self.lastSearchQuery completionBlock:^(NSMutableArray *photos, NSError *error) {
+        if (error) {
+            [self showRetryAlertWithError:error];
+        } else {
+            __weak CollectionViewController *weakSelf = self;
+            int64_t delayInSeconds = 2.0;
+            dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+            dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                NSUInteger lastIndex = self.photos.count - kPageSize;
+                NSMutableArray *indexPs = [NSMutableArray array];
+                for (NSUInteger i = lastIndex; i<photos.count; i++) {
+                    [indexPs addObject:[NSIndexPath indexPathForItem:i inSection:0]];
+                }
+                [weakSelf.collectionView insertItemsAtIndexPaths:indexPs];
+                [weakSelf.collectionView.infiniteScrollingView stopAnimating];
+            });
+        }
+    }];
+
+
 }
 
 -(void)dealloc{
@@ -81,7 +138,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView {
     return 1;
 }
-
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
     return self.photos.count;
@@ -122,94 +178,17 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     return 2.0;
 }
 
-
-#pragma mark - Private
-
-- (void)fetchData:(void(^)(void))completion {
-    NSURL *requestURL = [NSURL URLWithString:kAPIEndpointURL];
-
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:requestURL completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self handleResponse:response data:data error:error completion:completion];
-        });
-    }];
-
-    // I run -[task resume] with delay because my network is too fast
-    NSTimeInterval delay = (self.photos.count == 0 ? 0 : 5);
-
-    [task performSelector:@selector(resume) withObject:nil afterDelay:delay];
-}
-
-- (void)handleResponse:(NSURLResponse*)response data:(NSData*)data error:(NSError*)error completion:(void(^)(void))completion {
-    void(^finish)(void) = completion ?: ^{};
-
-    if(error) {
-        [self showRetryAlertWithError:error];
-        finish();
-        return;
-    }
-
-    NSError *jsonError;
-    NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-
-    // Fix broken Flickr JSON
-    jsonString = [jsonString stringByReplacingOccurrencesOfString: @"\\'" withString: @"'"];
-    NSData *fixedData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
-
-    NSDictionary *responseDict = (NSDictionary*) [NSJSONSerialization JSONObjectWithData:fixedData options:0 error:&jsonError];
-
-    if(jsonError) {
-        [self showRetryAlertWithError:jsonError];
-        finish();
-        return;
-    }
-
-    NSMutableArray *indexPaths = [[NSMutableArray alloc] init];
-    NSArray *photoEntities = [responseDict valueForKeyPath:@"photos.photo"];
-
-    self.lastPageIndex = [[responseDict valueForKeyPath:@"photos.page"] unsignedIntegerValue];
-
-    NSString *stat = [responseDict valueForKeyPath:@"stat"];
-    if (![stat isEqualToString:@"ok"]) {
-        [self showRetryAlertWithError:nil];
-        return;
-    }
-
-    NSInteger index = self.photos.count;
-
-    for(NSDictionary *dic in photoEntities) {
-
-        // Create photo urls.
-
-        NSIndexPath *indexPath = [NSIndexPath indexPathForItem:index++ inSection:0];
-
-        //[self.photos addObject:[NSURL URLWithString:url]];
-        [indexPaths addObject:indexPath];
-    }
-
-    //    self.modifiedAt = modifiedAt;
-
-    [self.collectionView performBatchUpdates:^{
-        [self.collectionView insertItemsAtIndexPaths:indexPaths];
-    } completion:^(BOOL finished) {
-        finish();
-    }];
-}
-
-
 #pragma mark - prepareVC
 
 -(void)addSearchBar{
     if (!self.searchBar) {
         self.searchBarBoundsY = self.navigationController.navigationBar.frame.size.height + [UIApplication sharedApplication].statusBarFrame.size.height;
-
         self.searchBar = [[UISearchBar alloc]initWithFrame:CGRectMake(0,self.searchBarBoundsY,[UIScreen mainScreen].bounds.size.width, 44)];
-
         self.searchBar.searchBarStyle       = UISearchBarStyleMinimal;
         self.searchBar.tintColor            = [UIColor blackColor];
         self.searchBar.barTintColor         = [UIColor blackColor];
         self.searchBar.delegate             = self;
-        self.searchBar.placeholder          = @"search here";
+        self.searchBar.placeholder          = @"Search Images";
 
         // add KVO observer.. so we will be informed when user scroll colllectionView
         [self addObservers];
@@ -236,28 +215,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     }
 }
 
-- (void)downloadPhotoFromURL:(NSURL*)URL completion:(void(^)(NSURL *URL, UIImage *image))completion {
-    static dispatch_queue_t downloadQueue;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        downloadQueue = dispatch_queue_create("downloadQueue", DISPATCH_QUEUE_CONCURRENT);
-    });
-
-    dispatch_async(downloadQueue, ^{
-        NSData *data = [NSData dataWithContentsOfURL:URL];
-        UIImage *image = [UIImage imageWithData:data];
-
-        if(image) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self.cache setObject:image forKey:URL];
-                if(completion) {
-                    completion(URL, image);
-                }
-            });
-        }
-    });
-}
-
 - (void)showRetryAlertWithError:(NSError*)error {
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Error fetching data", @"") message:error.localizedDescription preferredStyle:UIAlertControllerStyleAlert];
 
@@ -266,9 +223,15 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     }]];
 
     [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Retry", @"") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [self fetchData:nil];
+        [[FlickrManager sharedManager] fetchDataForText:self.lastSearchQuery completionBlock:^(NSMutableArray *photos, NSError *error) {
+            if (error) {
+                [self showRetryAlertWithError:error];
+            } else {
+                self.photos = photos;
+                [self.collectionView reloadData];
+            }
+        }];
     }]];
-
     [self presentViewController:alertController animated:YES completion:nil];
 }
 
@@ -279,9 +242,21 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.collectionView reloadData];
 }
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar{
+
+    NSString *searchText = [self sanitizeSearchKeyword:searchBar.text];
+    if (!searchText.length) {
+        return;
+    }
+    self.lastSearchQuery = searchText;
+    [self updateSearchHistoryWithText:searchText];
+
     [[[FlickrManager sharedManager] photos] removeAllObjects];
     [self.collectionView setHidden:YES];
+    [self.indicatorView setHidden:NO];
+    [self.indicatorView startAnimating];
     [[FlickrManager sharedManager] fetchDataForText:searchBar.text completionBlock:^(NSMutableArray *photos, NSError *error) {
+        [self.indicatorView setHidden:YES];
+        [self.indicatorView stopAnimating];
         if (error) {
             [self showRetryAlertWithError:error];
         } else {
@@ -294,15 +269,9 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.view endEditing:YES];
 }
 - (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar{
-    // we used here to set self.searchBarActive = YES
-    // but we'll not do that any more... it made problems
-    // it's better to set self.searchBarActive = YES when user typed something
     [self.searchBar setShowsCancelButton:YES animated:YES];
 }
 - (void)searchBarTextDidEndEditing:(UISearchBar *)searchBar{
-    // this method is being called when search btn in the keyboard tapped
-    // we set searchBarActive = NO
-    // but no need to reloadCollectionView
     self.searchBarActive = NO;
     [self.searchBar setShowsCancelButton:NO animated:YES];
 }
@@ -311,5 +280,102 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.searchBar resignFirstResponder];
     self.searchBar.text  = @"";
 }
+
+-(NSString*)sanitizeSearchKeyword:(NSString*)keyword {
+    NSString *string = [keyword stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return [string lowercaseString];
+}
+
+-(void)updateSearchHistoryWithText:(NSString*)searchText {
+    // Managing recent Search history
+    NSMutableArray *recentArray;
+    if ([[NSUserDefaults standardUserDefaults] objectForKey:@"recentSearch"]) {
+        NSArray *imArray = [[NSUserDefaults standardUserDefaults] objectForKey:@"recentSearch"];
+        recentArray = [NSMutableArray arrayWithArray:imArray];
+        if ([recentArray containsObject:searchText]) {
+            [recentArray removeObject:searchText];
+        }
+        [recentArray insertObject:searchText atIndex:0];
+        [[NSUserDefaults standardUserDefaults] setObject:recentArray forKey:@"recentSearch"];
+    } else {
+        recentArray = [NSMutableArray arrayWithObject:searchText];
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"recentSearch"];
+        [[NSUserDefaults standardUserDefaults] setObject:recentArray forKey:@"recentSearch"];
+    }
+    [[NSUserDefaults standardUserDefaults] synchronize];
+
+    [self.recentArray removeAllObjects];
+    self.recentArray = recentArray;
+}
+
+#pragma mark UIScrollViewDelegate
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    CGRect frame = self.navigationController.navigationBar.frame;
+    CGFloat size = frame.size.height - 21;
+    CGFloat framePercentageHidden = ((20 - frame.origin.y) / (frame.size.height - 1));
+    CGFloat scrollOffset = scrollView.contentOffset.y;
+    CGFloat scrollDiff = scrollOffset - self.previousScrollViewYOffset;
+    CGFloat scrollHeight = scrollView.frame.size.height;
+    CGFloat scrollContentSizeHeight = scrollView.contentSize.height + scrollView.contentInset.bottom;
+
+    if (scrollOffset <= -scrollView.contentInset.top) {
+        frame.origin.y = 20;
+    } else if ((scrollOffset + scrollHeight) >= scrollContentSizeHeight) {
+        frame.origin.y = -size;
+    } else {
+        frame.origin.y = MIN(20, MAX(-size, frame.origin.y - scrollDiff));
+    }
+
+    [self.navigationController.navigationBar setFrame:frame];
+    [self updateBarButtonItems:(1 - framePercentageHidden)];
+    self.previousScrollViewYOffset = scrollOffset;
+}
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+{
+    [self stoppedScrolling];
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView
+                  willDecelerate:(BOOL)decelerate
+{
+    if (!decelerate) {
+        [self stoppedScrolling];
+    }
+}
+
+- (void)stoppedScrolling
+{
+    CGRect frame = self.navigationController.navigationBar.frame;
+    if (frame.origin.y < 20) {
+        [self animateNavBarTo:-(frame.size.height - 21)];
+    }
+}
+
+- (void)updateBarButtonItems:(CGFloat)alpha
+{
+    [self.navigationItem.leftBarButtonItems enumerateObjectsUsingBlock:^(UIBarButtonItem* item, NSUInteger i, BOOL *stop) {
+        item.customView.alpha = alpha;
+    }];
+    [self.navigationItem.rightBarButtonItems enumerateObjectsUsingBlock:^(UIBarButtonItem* item, NSUInteger i, BOOL *stop) {
+        item.customView.alpha = alpha;
+    }];
+    self.navigationItem.titleView.alpha = alpha;
+    self.navigationController.navigationBar.tintColor = [self.navigationController.navigationBar.tintColor colorWithAlphaComponent:alpha];
+}
+
+- (void)animateNavBarTo:(CGFloat)y
+{
+    [UIView animateWithDuration:0.2 animations:^{
+        CGRect frame = self.navigationController.navigationBar.frame;
+        CGFloat alpha = (frame.origin.y >= y ? 0 : 1);
+        frame.origin.y = y;
+        [self.navigationController.navigationBar setFrame:frame];
+        [self updateBarButtonItems:alpha];
+    }];
+}
+
 
 @end
