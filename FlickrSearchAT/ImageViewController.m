@@ -8,6 +8,7 @@
 
 #import "ImageViewController.h"
 #import <SDWebImage/UIImageView+WebCache.h>
+#import <UIImageView+AFNetworking.h>
 
 @interface ImageViewController ()
 
@@ -17,7 +18,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self.imageView sd_setImageWithURL:self.photoURL];
+    //[self.imageView sd_setImageWithURL:self.photoURL];
     [self.navigationController.navigationBar setFrame:CGRectMake(0, 20, [[UIScreen mainScreen] bounds].size.width, 44)];
 }
 

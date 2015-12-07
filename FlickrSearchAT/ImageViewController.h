@@ -7,8 +7,9 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <FSImageViewer/FSImageViewerViewController.h>
 
-@interface ImageViewController : UIViewController
+@interface ImageViewController : FSImageViewerViewController
 
 @property (nonatomic, strong) NSURL *photoURL;
 @property (strong, nonatomic) IBOutlet UIImageView *imageView;

@@ -7,6 +7,8 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <SDWebImage/SDWebImageDownloader.h>
+#import <SDWebImage/SDWebImageDownloaderOperation.h>
 
 @interface FlickrManager : NSObject
 
@@ -15,6 +17,10 @@ typedef void(^dataFetchCompletionBlock)(NSMutableArray*, NSError*);
 @property (nonatomic, strong) NSMutableArray *photos; // NSURLs
 
 @property (nonatomic, assign) NSUInteger lastFetchedPageIndex;
+@property (nonatomic, strong) NSMutableArray *imageFailedBacklog;
+@property (nonatomic, strong) SDWebImageDownloader *imageDownloader;
+@property (nonatomic, strong) NSString *lastSearchQuery;
+@property (nonatomic, assign) BOOL dataNeedsRefresh;
 
 + (id)sharedManager;
 - (void)fetchDataForText:(NSString*)searchString completionBlock:(dataFetchCompletionBlock)completion;

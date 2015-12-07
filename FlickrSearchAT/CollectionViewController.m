@@ -13,6 +13,10 @@
 #import <DGActivityIndicatorView/DGActivityIndicatorView.h>
 #import <SVPullToRefresh/SVPullToRefresh.h>
 #import "ImageViewController.h"
+#import "HistoryViewController.h"
+#import "NSString+URLEncode.h"
+#import <FSImageViewer/FSBasicImage.h>
+#import <FSImageViewer/FSBasicImageSource.h>
 
 static NSString* const kCellIdentifier = @"PhotoCell";
 static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=3e7cc266ae2b0e0d78e279ce8e361736&format=json&nojsoncallback=1&text=kittens";
@@ -26,8 +30,8 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 @property (nonatomic, assign) NSUInteger lastPageIndex;
 @property (nonatomic, strong) NSMutableArray *recentArray;
 @property (nonatomic, strong) DGActivityIndicatorView *indicatorView;
-@property (nonatomic, strong) NSString *lastSearchQuery;
 @property (nonatomic) CGFloat previousScrollViewYOffset;
+@property (nonatomic, strong) NSMutableArray *failedImages; // IndexPaths;
 
 @property NSCache *cache;
 
@@ -42,17 +46,9 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
     self.cache = [[NSCache alloc] init];
     self.photos = [NSMutableArray array];
+    self.failedImages = [NSMutableArray array];
 
-    [[FlickrManager sharedManager] fetchDataForText:@"love" completionBlock:^(NSMutableArray *photoURLs, NSError *error) {
-        [self.indicatorView stopAnimating];
-        [self.indicatorView setHidden:YES];
-        if (error) {
-            [self showRetryAlertWithError:error];
-        } else {
-            self.photos = photoURLs;
-            [self.collectionView reloadData];
-        }
-    }];
+    [self loadData];
 
     __weak CollectionViewController *weakSelf = self;
     [self.collectionView addInfiniteScrollingWithActionHandler:^{
@@ -77,9 +73,18 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
                                  };
     self.title = @"Flickr Search";
 
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[[UIImage imageNamed:@"FlickrLogo"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal]
+                                                                              style:UIBarButtonItemStylePlain
+                                                                             target:self
+                                                                             action:nil];
+    [self.navigationItem.leftBarButtonItem setEnabled:NO];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[[UIImage imageNamed:@"history"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal]
+                                                                             style:UIBarButtonItemStylePlain
+                                                                            target:self
+                                                                            action:@selector(historyTapped:)];
+
     [self.navigationController.navigationBar setTitleTextAttributes:attributes];
     self.navigationController.navigationBarHidden = NO;
-
     [self.navigationController.navigationBar setTintColor:UIColorFromRGB(0x2398B5)];
     self.view.backgroundColor = [UIColor whiteColor];
     self.collectionView.backgroundColor = [UIColor whiteColor];
@@ -89,11 +94,22 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [super viewWillAppear:animated];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceRotated) name:UIDeviceOrientationDidChangeNotification object:nil];
     [self addSearchBar];
-}
 
--(void)viewWillDisappear:(BOOL)animated {
-    [super viewWillDisappear:animated];
-    
+    if ([[FlickrManager sharedManager] dataNeedsRefresh]) {
+        [[FlickrManager sharedManager] setDataNeedsRefresh:NO];
+        [self.photos removeAllObjects];
+        [[[FlickrManager sharedManager] photos] removeAllObjects];
+        [self.collectionView setHidden:YES];
+        [self.indicatorView setHidden:NO];
+        [self.indicatorView startAnimating];
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            // cpu intensive code
+            [self refreshData];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.indicatorView stopAnimating];
+            });
+        });
+    }
 }
 
 -(void)deviceRotated {
@@ -103,8 +119,14 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.collectionView reloadData];
 }
 
+- (IBAction)historyTapped:(id)sender {
+    HistoryViewController *historyVC = [self.storyboard instantiateViewControllerWithIdentifier:@"HistoryViewController"];
+    historyVC.searchQueries = self.recentArray;
+    [self.navigationController pushViewController:historyVC animated:YES];
+}
+
 -(void)fetchMoreImages{
-    [[FlickrManager sharedManager] fetchNextPageDataForText:self.lastSearchQuery completionBlock:^(NSMutableArray *photos, NSError *error) {
+    [[FlickrManager sharedManager] fetchNextPageDataForText:[[FlickrManager sharedManager] lastSearchQuery] completionBlock:^(NSMutableArray *photos, NSError *error) {
         if (error) {
             [self showRetryAlertWithError:error];
         } else {
@@ -136,6 +158,23 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     // Dispose of any resources that can be recreated.
 }
 
+-(void)loadData {
+    [self refreshData];
+}
+
+-(void)refreshData {
+    [[FlickrManager sharedManager] fetchDataForText:[[FlickrManager sharedManager] lastSearchQuery] completionBlock:^(NSMutableArray *photos, NSError *error) {
+        [self.indicatorView setHidden:YES];
+        [self.indicatorView stopAnimating];
+        if (error) {
+            [self showRetryAlertWithError:error];
+        } else {
+            self.photos = photos;
+            [self.collectionView setHidden:NO];
+            [self.collectionView reloadData];
+        }
+    }];
+}
 
 #pragma mark <UICollectionViewDataSource>
 
@@ -161,17 +200,54 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [cell.imageView setHidden:YES];
     [cell.imageView sd_setImageWithURL:photoURL completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
         [cell.activityIndicator stopAnimating];
+        [cell.activityIndicator setHidden:YES];
         [cell.imageView setHidden:NO];
-        [cell.imageView setBackgroundColor:[UIColor blackColor]];
+        if (error || !image) {
+            [[[FlickrManager sharedManager] imageFailedBacklog] addObject:imageURL];
+            cell.imageView.contentMode = UIViewContentModeCenter;
+            cell.imageView.image = [UIImage imageNamed:@"reload"];
+            NSLog(@"\nImage download failed with error %@", error);
+        } else  {
+            [cell.imageView setBackgroundColor:[UIColor blackColor]];
+        }
     }];
     return cell;
 }
 
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+    PhotoCollectionViewCell *cell = (PhotoCollectionViewCell*)[collectionView cellForItemAtIndexPath:indexPath];
+    if (!cell.imageView.image || [cell.imageView.image isEqual:[UIImage imageNamed:@"reload"]]) {
+        // Attempt to download again
+        [cell.imageView sd_setImageWithURL:self.photos[indexPath.row]   completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+            [cell.activityIndicator stopAnimating];
+            [cell.activityIndicator setHidden:YES];
+            [cell.imageView setHidden:NO];
+            if ((error || !image) && cell) {
+                [[[FlickrManager sharedManager] imageFailedBacklog] addObject:imageURL];
+                cell.imageView.contentMode = UIViewContentModeCenter;
+                cell.imageView.image = [UIImage imageNamed:@"reload"];
+                NSLog(@"\nImage download failed with error %@ for url %@", error, imageURL);
+            } else  {
+                [cell.imageView setBackgroundColor:[UIColor blackColor]];
+            }
+        }];
+        return;
+    }
     [collectionView deselectItemAtIndexPath:indexPath animated:YES];
-    ImageViewController *imageController = [self.storyboard instantiateViewControllerWithIdentifier:@"ImageViewController"];
-    imageController.photoURL = self.photos[indexPath.row];
-    [self.navigationController pushViewController:imageController animated:YES];
+
+    NSMutableArray *fsbImages = [NSMutableArray array];
+    for (int i = 0; i<self.photos.count; i++) {
+        FSBasicImage *image = [[FSBasicImage alloc] initWithImageURL:self.photos[i]];
+        [fsbImages addObject:image];
+    }
+
+    FSBasicImageSource *photoSource = [[FSBasicImageSource alloc] initWithImages:fsbImages];
+    
+    //ImageViewController *imageController = [self.storyboard instantiateViewControllerWithIdentifier:@"ImageViewController"];
+    ImageViewController *imageVC = [[ImageViewController alloc] initWithImageSource:photoSource];
+    [imageVC moveToImageAtIndex:indexPath.row animated:NO];
+   // imageController.photoURL = self.photos[indexPath.row];
+    [self.navigationController pushViewController:imageVC animated:YES];
 }
 
 #pragma mark -  <UICollectionViewDelegateFlowLayout>
@@ -240,7 +316,7 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     }]];
 
     [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Retry", @"") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [[FlickrManager sharedManager] fetchDataForText:self.lastSearchQuery completionBlock:^(NSMutableArray *photos, NSError *error) {
+        [[FlickrManager sharedManager] fetchDataForText:[[FlickrManager sharedManager] lastSearchQuery] completionBlock:^(NSMutableArray *photos, NSError *error) {
             if (error) {
                 [self showRetryAlertWithError:error];
             } else {
@@ -260,18 +336,22 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 }
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar{
 
-    NSString *searchText = [self sanitizeSearchKeyword:searchBar.text];
-    if (!searchText.length) {
+    if (!searchBar.text.length) {
         return;
     }
-    self.lastSearchQuery = searchText;
-    [self updateSearchHistoryWithText:searchText];
 
+    [self updateSearchHistoryWithText:searchBar.text];
+
+    NSString *searchText = [self sanitizeSearchKeyword:searchBar.text];
+
+    [[FlickrManager sharedManager] setLastSearchQuery:searchText];
+
+    searchText = [searchText urlencode];
     [[[FlickrManager sharedManager] photos] removeAllObjects];
     [self.collectionView setHidden:YES];
     [self.indicatorView setHidden:NO];
     [self.indicatorView startAnimating];
-    [[FlickrManager sharedManager] fetchDataForText:searchBar.text completionBlock:^(NSMutableArray *photos, NSError *error) {
+    [[FlickrManager sharedManager] fetchDataForText:searchText completionBlock:^(NSMutableArray *photos, NSError *error) {
         [self.indicatorView setHidden:YES];
         [self.indicatorView stopAnimating];
         if (error) {
@@ -373,12 +453,8 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
 - (void)updateBarButtonItems:(CGFloat)alpha
 {
-    [self.navigationItem.leftBarButtonItems enumerateObjectsUsingBlock:^(UIBarButtonItem* item, NSUInteger i, BOOL *stop) {
-        item.customView.alpha = alpha;
-    }];
-    [self.navigationItem.rightBarButtonItems enumerateObjectsUsingBlock:^(UIBarButtonItem* item, NSUInteger i, BOOL *stop) {
-        item.customView.alpha = alpha;
-    }];
+    self.navigationItem.leftBarButtonItem.customView.alpha = alpha;
+    self.navigationItem.rightBarButtonItem.customView.alpha = alpha;
     self.navigationItem.titleView.alpha = alpha;
     self.navigationController.navigationBar.tintColor = [self.navigationController.navigationBar.tintColor colorWithAlphaComponent:alpha];
 }

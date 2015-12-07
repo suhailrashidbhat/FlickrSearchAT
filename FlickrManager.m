@@ -27,14 +27,19 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
 -(instancetype)init {
     if (self = [super init]) {
         self.photos = [NSMutableArray array];
+        self.imageDownloader = [SDWebImageDownloader sharedDownloader];
+        self.imageFailedBacklog = [NSMutableArray array];
+        self.lastSearchQuery = @"love";
+        self.dataNeedsRefresh = NO;
     }
     return self;
 }
 
 - (void)fetchDataForText:(NSString *)searchString completionBlock:(dataFetchCompletionBlock)completion {
     self.lastFetchedPageIndex = 1;
-    NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:kFlickrSearchURL, kFlickrAPIKey, searchString, self.lastFetchedPageIndex]];
-    NSLog(requestURL.description);
+    self.lastSearchQuery = searchString;
+    NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:kFlickrSearchURL, kFlickrAPIKey, searchString, (unsigned long)self.lastFetchedPageIndex]];
+    NSLog(@"%@",requestURL.description);
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:requestURL completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [self handleResponse:response data:data error:error completion:completion];
@@ -44,9 +49,8 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
 }
 
 - (void)fetchNextPageDataForText:(NSString *)searchString completionBlock:(dataFetchCompletionBlock)completion {
-
     NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:kFlickrSearchURL, kFlickrAPIKey, searchString, (unsigned long)++self.lastFetchedPageIndex]];
-    NSLog(requestURL.description);
+    NSLog(@"%@",requestURL.description);
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:requestURL completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [self handleResponse:response data:data error:error completion:completion];
@@ -79,13 +83,23 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
     if (photoEntities.count >0) {
         [self createPhotoURLs:photoEntities];
         completion(self.photos, nil);
+
+        /*for (int i = 0; i<photoEntities.count; i++) {
+            [self.imageDownloader downloadImageWithURL:self.photos[i] options:SDWebImageDownloaderHighPriority progress:nil completed:^(UIImage *image, NSData *data, NSError *error, BOOL finished) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (i == photoEntities.count/2) {
+                        completion(self.photos, nil);
+                    }
+                });
+            }];
+        }*/
     }
 }
 
 -(void)createPhotoURLs:(NSArray*)photos {
     for(NSDictionary *dic in photos) {
         // Create photo urls.
-        NSString *urlS = [NSString stringWithFormat:@"http://farm%@.static.flickr.com/%@/%@_%@.jpg", [dic valueForKeyPath:@"farm"], [dic valueForKeyPath:@"server"], [dic valueForKeyPath:@"id"], [dic valueForKeyPath:@"secret"]];
+        NSString *urlS = [NSString stringWithFormat:@"https://farm%@.static.flickr.com/%@/%@_%@.jpg", [dic valueForKeyPath:@"farm"], [dic valueForKeyPath:@"server"], [dic valueForKeyPath:@"id"], [dic valueForKeyPath:@"secret"]];
         NSURL *url = [NSURL URLWithString:urlS];
         [self.photos addObject:url];
     }

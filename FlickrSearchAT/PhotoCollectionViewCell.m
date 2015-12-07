@@ -11,10 +11,13 @@
 @implementation PhotoCollectionViewCell
 
 -(void)awakeFromNib {
-    self.activityIndicator = [[DGActivityIndicatorView alloc] initWithType:DGActivityIndicatorAnimationTypeBallScaleMultiple];
+    self.activityIndicator = [[DGActivityIndicatorView alloc] initWithType:DGActivityIndicatorAnimationTypeBallBeat];
+    self.activityIndicator.frame = self.frame;
     self.activityIndicator.center = self.center;
-    self.activityIndicator.tintColor = UIColorFromRGB(0x2398B5);
-    [self addSubview:self.activityIndicator];
+    self.imageView.userInteractionEnabled = YES;
+    self.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    self.activityIndicator.tintColor = UIColorFromRGB(0xF398B5);
+    //[self addSubview:self.activityIndicator];  // no need of it for now! 
     [self.activityIndicator startAnimating];
 }
 
