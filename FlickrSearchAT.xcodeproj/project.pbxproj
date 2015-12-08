@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		000B35C01C174120001A8215 /* PhotoEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 000B35BF1C174120001A8215 /* PhotoEntity.m */; };
 		000B35CD1C177226001A8215 /* FlickrSearchATTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 000B35CC1C177226001A8215 /* FlickrSearchATTests.m */; };
+		000B35D51C178770001A8215 /* goup@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 000B35D41C178770001A8215 /* goup@3x.png */; };
 		00674A181C140BE8004C53DC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 00674A171C140BE8004C53DC /* main.m */; };
 		00674A1B1C140BE8004C53DC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 00674A1A1C140BE8004C53DC /* AppDelegate.m */; };
 		00674A211C140BE8004C53DC /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 00674A1F1C140BE8004C53DC /* Main.storyboard */; };
@@ -46,6 +47,7 @@
 		000B35CA1C177226001A8215 /* FlickrSearchATTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FlickrSearchATTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		000B35CC1C177226001A8215 /* FlickrSearchATTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FlickrSearchATTests.m; sourceTree = "<group>"; };
 		000B35CE1C177226001A8215 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		000B35D41C178770001A8215 /* goup@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "goup@3x.png"; sourceTree = "<group>"; };
 		00674A131C140BE8004C53DC /* FlickrSearchAT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlickrSearchAT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		00674A171C140BE8004C53DC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		00674A191C140BE8004C53DC /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -123,6 +125,7 @@
 		000B35C31C176794001A8215 /* Images */ = {
 			isa = PBXGroup;
 			children = (
+				000B35D41C178770001A8215 /* goup@3x.png */,
 				0077E8781C16A90300EE4335 /* history@2x.png */,
 				0077E8791C16A90300EE4335 /* history@3x.png */,
 				0077E8751C161BB300EE4335 /* logo.png */,
@@ -364,6 +367,7 @@
 				00674A261C140BE8004C53DC /* LaunchScreen.storyboard in Resources */,
 				00E7B08E1C156ED900C01AF2 /* reload@2x.png in Resources */,
 				0077E8761C161BB300EE4335 /* logo.png in Resources */,
+				000B35D51C178770001A8215 /* goup@3x.png in Resources */,
 				00674A231C140BE8004C53DC /* Assets.xcassets in Resources */,
 				00E7B0641C1545CE00C01AF2 /* FlickrLogo@3x.png in Resources */,
 				00E7B0631C1545CE00C01AF2 /* FlickrLogo@2x.png in Resources */,

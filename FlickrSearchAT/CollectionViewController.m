@@ -34,6 +34,7 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 @property (nonatomic, strong) UIView *searchResultsView;
 @property (nonatomic, strong) UITableView *searchResultTable;
 @property (nonatomic, strong) NSArray *filteredResults;
+@property (nonatomic, strong) UIImageView *goUpView;
 
 @end
 
@@ -257,6 +258,17 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.view addSubview:self.indicatorView];
     [self.indicatorView startAnimating];
 
+    self.goUpView = [[UIImageView alloc] initWithFrame:CGRectMake(self.collectionView.frame.size.width - 60, self.collectionView.frame.size.height - 60, 40, 40)];
+    self.goUpView.contentMode = UIViewContentModeScaleAspectFit;
+    self.goUpView.image = [UIImage imageNamed:@"goup"];
+    self.goUpView.userInteractionEnabled = YES;
+    UITapGestureRecognizer *singleTap =  [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(scrollToUP)];
+    [singleTap setNumberOfTapsRequired:1];
+    [self.goUpView addGestureRecognizer:singleTap];
+    [self.goUpView setHidden:YES];
+    self.goUpView.alpha = 0.5;
+    [self.view addSubview:self.goUpView];
+
     self.searchResultsView = [[UIView alloc] initWithFrame:CGRectMake(0, self.collectionView.frame.origin.y + 44 + 5, self.collectionView.frame.size.width, self.collectionView.frame.size.height)];
     self.searchResultTable = [[UITableView alloc] initWithFrame:self.searchResultsView.frame style:UITableViewStylePlain];
     self.searchResultTable.delegate = self;
@@ -269,6 +281,11 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.navigationController.navigationBar setTintColor:UIColorFromRGB(0x2398B5)];
     self.view.backgroundColor = [UIColor whiteColor];
     self.collectionView.backgroundColor = [UIColor whiteColor];
+}
+
+-(void)scrollToUP {
+    [self.collectionView setContentOffset:
+     CGPointMake(0, -self.collectionView.contentInset.top) animated:YES];
 }
 
 -(void)addSearchBar{
@@ -474,6 +491,9 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
         self.navigationItem.leftBarButtonItem = nil;
         self.navigationItem.rightBarButtonItem = nil;
         self.title = nil;
+        [self.goUpView setHidden:NO];
+    } else if (alpha == 1.0) {
+        [self.goUpView setHidden:YES];
     } else {
         [self addNavigationItems];
     }
