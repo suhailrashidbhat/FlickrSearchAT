@@ -11,10 +11,9 @@
 #import "FlickrManager.h"
 #import <SDWebImage/UIImageView+WebCache.h>
 #import <DGActivityIndicatorView/DGActivityIndicatorView.h>
-#import <SVPullToRefresh/SVPullToRefresh.h>
+#import "UIScrollView+SVInfiniteScrolling.h"
 #import "ImageViewController.h"
 #import "HistoryViewController.h"
-#import "NSString+URLEncode.h"
 #import <FSImageViewer/FSBasicImage.h>
 #import <FSImageViewer/FSBasicImageSource.h>
 
@@ -127,6 +126,10 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
 -(void)fetchMoreImages{
     [[FlickrManager sharedManager] fetchNextPageDataForText:[[FlickrManager sharedManager] lastSearchQuery] completionBlock:^(NSMutableArray *photos, NSError *error) {
+        if ([error.domain isEqualToString:@"com.srb.resultend"]) {
+            [self.collectionView.infiniteScrollingView stopAnimating];
+            return;
+        }
         if (error) {
             [self showRetryAlertWithError:error];
         } else {
@@ -346,7 +349,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
     [[FlickrManager sharedManager] setLastSearchQuery:searchText];
 
-    searchText = [searchText urlencode];
     [[[FlickrManager sharedManager] photos] removeAllObjects];
     [self.collectionView setHidden:YES];
     [self.indicatorView setHidden:NO];

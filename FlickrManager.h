@@ -15,12 +15,9 @@
 typedef void(^dataFetchCompletionBlock)(NSMutableArray*, NSError*);
 
 @property (nonatomic, strong) NSMutableArray *photos; // NSURLs
-
-@property (nonatomic, assign) NSUInteger lastFetchedPageIndex;
-@property (nonatomic, strong) NSMutableArray *imageFailedBacklog;
-@property (nonatomic, strong) SDWebImageDownloader *imageDownloader;
 @property (nonatomic, strong) NSString *lastSearchQuery;
 @property (nonatomic, assign) BOOL dataNeedsRefresh;
+@property (nonatomic, strong) NSMutableArray *imageFailedBacklog;
 
 + (id)sharedManager;
 - (void)fetchDataForText:(NSString*)searchString completionBlock:(dataFetchCompletionBlock)completion;

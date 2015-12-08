@@ -12,6 +12,15 @@
 static NSString *const kFlickrAPIKey = @"ffce5722188b15182473626a96decc2c";
 static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=%@&format=json&nojsoncallback=1&text=%@&page=%lu&per_page=51";
 
+
+
+@interface FlickrManager()
+@property (nonatomic, assign) NSUInteger totalPagesForQuery;
+@property (nonatomic, assign) NSUInteger lastFetchedPageIndex;
+@property (nonatomic, strong) SDWebImageDownloader *imageDownloader;
+@end
+
+
 @implementation FlickrManager
 
 + (id)sharedManager {
@@ -37,7 +46,9 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
 
 - (void)fetchDataForText:(NSString *)searchString completionBlock:(dataFetchCompletionBlock)completion {
     self.lastFetchedPageIndex = 1;
+    self.totalPagesForQuery = 0;
     self.lastSearchQuery = searchString;
+    searchString = [searchString urlencode];
     NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:kFlickrSearchURL, kFlickrAPIKey, searchString, (unsigned long)self.lastFetchedPageIndex]];
     NSLog(@"%@",requestURL.description);
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:requestURL completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
@@ -49,6 +60,14 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
 }
 
 - (void)fetchNextPageDataForText:(NSString *)searchString completionBlock:(dataFetchCompletionBlock)completion {
+
+    if (self.lastFetchedPageIndex >= self.totalPagesForQuery) {
+        NSError *error = [NSError errorWithDomain:@"com.srb.resultend" code:003 userInfo:@{}];
+        completion(nil, error);
+        return;
+    }
+
+    searchString = [searchString urlencode];
     NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:kFlickrSearchURL, kFlickrAPIKey, searchString, (unsigned long)++self.lastFetchedPageIndex]];
     NSLog(@"%@",requestURL.description);
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:requestURL completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
@@ -61,11 +80,13 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
 
 - (void)handleResponse:(NSURLResponse*)response data:(NSData*)data error:(NSError*)error completion:(dataFetchCompletionBlock)completion {
 
+    // Handle Error
     if (error) {
         completion(nil, error);
         return;
     }
 
+    // Handle JSON Error
     NSError *jsonError;
     NSDictionary *responseDict = (NSDictionary*) [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
     if(jsonError) {
@@ -73,12 +94,17 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
         return;
     }
 
+    NSLog(@"%@", responseDict);
     NSArray *photoEntities = [responseDict valueForKeyPath:@"photos.photo"];
+    self.totalPagesForQuery = [[responseDict valueForKeyPath:@"photos.pages"] unsignedIntegerValue];
     self.lastFetchedPageIndex = [[responseDict valueForKeyPath:@"photos.page"] unsignedIntegerValue];
 
+
+    // If Zero Count
     NSString *stat = [responseDict valueForKeyPath:@"stat"];
-    if (![stat isEqualToString:@"ok"]) {
-        completion(nil, nil);
+    if (![stat isEqualToString:@"ok"] && photoEntities.count > 0) {
+        NSError *statError = [NSError errorWithDomain:@"Server Error!" code:002 userInfo:@{@"message":@"Stat is not OK!"}];
+        completion(nil, statError);
     }
     if (photoEntities.count >0) {
         [self createPhotoURLs:photoEntities];
@@ -93,6 +119,9 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
                 });
             }];
         }*/
+    } else {
+        NSError *noDataError = [NSError errorWithDomain:@"No Results Found!" code:001 userInfo:@{@"message":@"No Photos for your query. :( "}];
+        completion(nil, noDataError);
     }
 }
 
