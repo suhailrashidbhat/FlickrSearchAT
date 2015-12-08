@@ -87,6 +87,49 @@
 			name = Model;
 			sourceTree = "<group>";
 		};
+		000B35C21C17676F001A8215 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				000B35BD1C1740FB001A8215 /* Model */,
+				00674A381C142A9E004C53DC /* Views */,
+				00674A301C141ACB004C53DC /* ViewControllers */,
+				00674A371C1429E2004C53DC /* Managers */,
+				000B35C41C1767DC001A8215 /* Helpers */,
+			);
+			name = Classes;
+			sourceTree = "<group>";
+		};
+		000B35C31C176794001A8215 /* Images */ = {
+			isa = PBXGroup;
+			children = (
+				0077E8781C16A90300EE4335 /* history@2x.png */,
+				0077E8791C16A90300EE4335 /* history@3x.png */,
+				0077E8751C161BB300EE4335 /* logo.png */,
+				00E7B08C1C156ED900C01AF2 /* reload@2x.png */,
+				00E7B08D1C156ED900C01AF2 /* reload@3x.png */,
+				00E7B0611C1545CE00C01AF2 /* FlickrLogo@2x.png */,
+				00E7B0621C1545CE00C01AF2 /* FlickrLogo@3x.png */,
+			);
+			name = Images;
+			sourceTree = "<group>";
+		};
+		000B35C41C1767DC001A8215 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				0077E85D1C15850D00EE4335 /* Categories */,
+			);
+			name = Helpers;
+			sourceTree = "<group>";
+		};
+		000B35C51C176810001A8215 /* AppDelegate */ = {
+			isa = PBXGroup;
+			children = (
+				00674A191C140BE8004C53DC /* AppDelegate.h */,
+				00674A1A1C140BE8004C53DC /* AppDelegate.m */,
+			);
+			name = AppDelegate;
+			sourceTree = "<group>";
+		};
 		00674A0A1C140BE8004C53DC = {
 			isa = PBXGroup;
 			children = (
@@ -108,17 +151,10 @@
 		00674A151C140BE8004C53DC /* FlickrSearchAT */ = {
 			isa = PBXGroup;
 			children = (
-				000B35BD1C1740FB001A8215 /* Model */,
-				00674A371C1429E2004C53DC /* Managers */,
-				00674A301C141ACB004C53DC /* Controllers */,
-				00674A381C142A9E004C53DC /* Views */,
-				0077E85D1C15850D00EE4335 /* Categories */,
+				000B35C21C17676F001A8215 /* Classes */,
 				00E7B05E1C15443500C01AF2 /* Resources */,
 				00674A161C140BE8004C53DC /* Supporting Files */,
-				00674A191C140BE8004C53DC /* AppDelegate.h */,
-				00674A1A1C140BE8004C53DC /* AppDelegate.m */,
-				00674A221C140BE8004C53DC /* Assets.xcassets */,
-				00674A271C140BE8004C53DC /* Info.plist */,
+				000B35C51C176810001A8215 /* AppDelegate */,
 			);
 			path = FlickrSearchAT;
 			sourceTree = "<group>";
@@ -129,11 +165,12 @@
 				00E7B0571C14A0CE00C01AF2 /* FlickrSearchAT-Prefix.pch */,
 				00E7B0561C149FF000C01AF2 /* Constants.h */,
 				00674A171C140BE8004C53DC /* main.m */,
+				00674A271C140BE8004C53DC /* Info.plist */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
-		00674A301C141ACB004C53DC /* Controllers */ = {
+		00674A301C141ACB004C53DC /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
 				00E7B0581C14D25C00C01AF2 /* ImageViewController.h */,
@@ -143,7 +180,7 @@
 				00E7B05B1C14E20400C01AF2 /* HistoryViewController.h */,
 				00E7B05C1C14E20400C01AF2 /* HistoryViewController.m */,
 			);
-			name = Controllers;
+			name = ViewControllers;
 			sourceTree = "<group>";
 		};
 		00674A371C1429E2004C53DC /* Managers */ = {
@@ -178,13 +215,8 @@
 		00E7B05E1C15443500C01AF2 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				0077E8781C16A90300EE4335 /* history@2x.png */,
-				0077E8791C16A90300EE4335 /* history@3x.png */,
-				0077E8751C161BB300EE4335 /* logo.png */,
-				00E7B08C1C156ED900C01AF2 /* reload@2x.png */,
-				00E7B08D1C156ED900C01AF2 /* reload@3x.png */,
-				00E7B0611C1545CE00C01AF2 /* FlickrLogo@2x.png */,
-				00E7B0621C1545CE00C01AF2 /* FlickrLogo@3x.png */,
+				000B35C31C176794001A8215 /* Images */,
+				00674A221C140BE8004C53DC /* Assets.xcassets */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
