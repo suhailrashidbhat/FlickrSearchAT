@@ -59,26 +59,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     }
 }
 
--(void)initializeUI {
-    self.indicatorView = [[DGActivityIndicatorView alloc] initWithType:DGActivityIndicatorAnimationTypeBallScaleMultiple tintColor:UIColorFromRGB(0x2398B5)];
-    self.indicatorView.frame = self.view.frame;
-    [self.view addSubview:self.indicatorView];
-    [self.indicatorView startAnimating];
-
-    self.searchResultsView = [[UIView alloc] initWithFrame:CGRectMake(0, self.collectionView.frame.origin.y + 44 + 5, self.collectionView.frame.size.width, self.collectionView.frame.size.height)];
-    self.searchResultTable = [[UITableView alloc] initWithFrame:self.searchResultsView.frame style:UITableViewStylePlain];
-    self.searchResultTable.delegate = self;
-    self.searchResultTable.dataSource = self;
-    [self.searchResultsView addSubview:self.searchResultTable];
-    [self.view addSubview:self.searchResultsView];
-    [self.searchResultsView setHidden:YES];
-    [self addNavigationItems];
-    self.navigationController.navigationBarHidden = NO;
-    [self.navigationController.navigationBar setTintColor:UIColorFromRGB(0x2398B5)];
-    self.view.backgroundColor = [UIColor whiteColor];
-    self.collectionView.backgroundColor = [UIColor whiteColor];
-}
-
 -(void)viewWillAppear:(BOOL)animated{
     [super viewWillAppear:animated];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceRotated) name:UIDeviceOrientationDidChangeNotification object:nil];
@@ -173,7 +153,7 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     }];
 }
 
-#pragma mark <UICollectionViewDataSource>
+#pragma mark UICollectionViewDataSource
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView {
     return 1;
@@ -248,7 +228,7 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.navigationController pushViewController:imageVC animated:YES];
 }
 
-#pragma mark -  <UICollectionViewDelegateFlowLayout>
+#pragma mark -  UICollectionViewDelegateFlowLayout
 - (UIEdgeInsets)collectionView:(UICollectionView *)collectionView
                         layout:(UICollectionViewLayout*)collectionViewLayout
         insetForSectionAtIndex:(NSInteger)section{
@@ -271,6 +251,26 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
 #pragma mark - prepareVC
 
+-(void)initializeUI {
+    self.indicatorView = [[DGActivityIndicatorView alloc] initWithType:DGActivityIndicatorAnimationTypeBallScaleMultiple tintColor:UIColorFromRGB(0x2398B5)];
+    self.indicatorView.frame = self.view.frame;
+    [self.view addSubview:self.indicatorView];
+    [self.indicatorView startAnimating];
+
+    self.searchResultsView = [[UIView alloc] initWithFrame:CGRectMake(0, self.collectionView.frame.origin.y + 44 + 5, self.collectionView.frame.size.width, self.collectionView.frame.size.height)];
+    self.searchResultTable = [[UITableView alloc] initWithFrame:self.searchResultsView.frame style:UITableViewStylePlain];
+    self.searchResultTable.delegate = self;
+    self.searchResultTable.dataSource = self;
+    [self.searchResultsView addSubview:self.searchResultTable];
+    [self.view addSubview:self.searchResultsView];
+    [self.searchResultsView setHidden:YES];
+    [self addNavigationItems];
+    self.navigationController.navigationBarHidden = NO;
+    [self.navigationController.navigationBar setTintColor:UIColorFromRGB(0x2398B5)];
+    self.view.backgroundColor = [UIColor whiteColor];
+    self.collectionView.backgroundColor = [UIColor whiteColor];
+}
+
 -(void)addSearchBar{
     if (!self.searchBar) {
         self.searchBarBoundsY = self.navigationController.navigationBar.frame.size.height + [UIApplication sharedApplication].statusBarFrame.size.height;
@@ -287,21 +287,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     }
 }
 
-#pragma mark - observer
-- (void)addObservers{
-    [self.collectionView addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
-}
-- (void)removeObservers{
-    [self.collectionView removeObserver:self forKeyPath:@"contentOffset" context:Nil];
-}
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(UICollectionView *)object change:(NSDictionary *)change context:(void *)context{
-    if ([keyPath isEqualToString:@"contentOffset"] && object == self.collectionView ) {
-        self.searchBar.frame = CGRectMake(self.searchBar.frame.origin.x,
-                                          self.searchBarBoundsY + ((-1* object.contentOffset.y)-self.searchBarBoundsY),
-                                          self.searchBar.frame.size.width,
-                                          self.searchBar.frame.size.height);
-    }
-}
 
 - (void)showRetryAlertWithError:(NSError*)error {
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Error fetching data", @"") message:error.localizedDescription preferredStyle:UIAlertControllerStyleAlert];
@@ -321,6 +306,22 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
         }];
     }]];
     [self presentViewController:alertController animated:YES completion:nil];
+}
+
+#pragma mark - observer
+- (void)addObservers{
+    [self.collectionView addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
+}
+- (void)removeObservers{
+    [self.collectionView removeObserver:self forKeyPath:@"contentOffset" context:Nil];
+}
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(UICollectionView *)object change:(NSDictionary *)change context:(void *)context{
+    if ([keyPath isEqualToString:@"contentOffset"] && object == self.collectionView ) {
+        self.searchBar.frame = CGRectMake(self.searchBar.frame.origin.x,
+                                          self.searchBarBoundsY + ((-1* object.contentOffset.y)-self.searchBarBoundsY),
+                                          self.searchBar.frame.size.width,
+                                          self.searchBar.frame.size.height);
+    }
 }
 
 #pragma mark - search
@@ -509,7 +510,7 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     }];
 }
 
-#pragma mark TableView Delegate and Data Source for Recenet Search
+#pragma mark TableView Delegate and Data Source for Recent Search
 
 
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
@@ -548,6 +549,27 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.indicatorView setHidden:NO];
     [self.indicatorView startAnimating];
     [self refreshData];
+}
+
+#pragma mark Previewing Context - 3D Touch Implementation
+
+-(UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)location {
+    NSIndexPath *indexPath = [self.collectionView indexPathForItemAtPoint:location];
+
+    PhotoCollectionViewCell *cell = (PhotoCollectionViewCell*)[self.collectionView cellForItemAtIndexPath:indexPath];
+    FSBasicImage *image = [[FSBasicImage alloc] initWithImageURL:self.photos[indexPath.row]];
+    FSBasicImageSource *photoSource = [[FSBasicImageSource alloc] initWithImages:@[image]];
+
+    ImageViewController *imageVC = [[ImageViewController alloc] initWithImageSource:photoSource];
+    [imageVC moveToImageAtIndex:indexPath.row animated:NO];
+    [self.navigationController pushViewController:imageVC animated:YES];
+    imageVC.preferredContentSize = CGSizeMake(0.0, 320.0);
+    previewingContext.sourceRect = cell.frame;
+    return imageVC;
+}
+
+-(void)previewingContext:(id<UIViewControllerPreviewing>)previewingContext commitViewController:(UIViewController *)viewControllerToCommit {
+    [self.navigationController showViewController:viewControllerToCommit sender:self];
 }
 
 @end
