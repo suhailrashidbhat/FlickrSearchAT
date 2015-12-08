@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		000B35C01C174120001A8215 /* PhotoEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 000B35BF1C174120001A8215 /* PhotoEntity.m */; };
 		00674A181C140BE8004C53DC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 00674A171C140BE8004C53DC /* main.m */; };
 		00674A1B1C140BE8004C53DC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 00674A1A1C140BE8004C53DC /* AppDelegate.m */; };
 		00674A211C140BE8004C53DC /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 00674A1F1C140BE8004C53DC /* Main.storyboard */; };
@@ -29,6 +30,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		000B35BE1C174120001A8215 /* PhotoEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhotoEntity.h; sourceTree = "<group>"; };
+		000B35BF1C174120001A8215 /* PhotoEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PhotoEntity.m; sourceTree = "<group>"; };
 		00674A131C140BE8004C53DC /* FlickrSearchAT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlickrSearchAT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		00674A171C140BE8004C53DC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		00674A191C140BE8004C53DC /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -75,6 +78,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		000B35BD1C1740FB001A8215 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				000B35BE1C174120001A8215 /* PhotoEntity.h */,
+				000B35BF1C174120001A8215 /* PhotoEntity.m */,
+			);
+			name = Model;
+			sourceTree = "<group>";
+		};
 		00674A0A1C140BE8004C53DC = {
 			isa = PBXGroup;
 			children = (
@@ -96,6 +108,7 @@
 		00674A151C140BE8004C53DC /* FlickrSearchAT */ = {
 			isa = PBXGroup;
 			children = (
+				000B35BD1C1740FB001A8215 /* Model */,
 				00674A371C1429E2004C53DC /* Managers */,
 				00674A301C141ACB004C53DC /* Controllers */,
 				00674A381C142A9E004C53DC /* Views */,
@@ -324,6 +337,7 @@
 			files = (
 				00674A2F1C141AC4004C53DC /* CollectionViewController.m in Sources */,
 				00674A361C1429D5004C53DC /* FlickrManager.m in Sources */,
+				000B35C01C174120001A8215 /* PhotoEntity.m in Sources */,
 				00E7B05D1C14E20400C01AF2 /* HistoryViewController.m in Sources */,
 				0077E8621C15857400EE4335 /* NSString+URLEncode.m in Sources */,
 				00674A1B1C140BE8004C53DC /* AppDelegate.m in Sources */,

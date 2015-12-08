@@ -15,6 +15,7 @@
 typedef void(^dataFetchCompletionBlock)(NSMutableArray*, NSError*);
 
 @property (nonatomic, strong) NSMutableArray *photos; // NSURLs
+@property (nonatomic, strong) NSMutableArray *photoEntities; // PhotoEntities
 @property (nonatomic, strong) NSString *lastSearchQuery;
 @property (nonatomic, assign) BOOL dataNeedsRefresh;
 @property (nonatomic, strong) NSMutableArray *imageFailedBacklog;

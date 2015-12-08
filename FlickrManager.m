@@ -7,6 +7,7 @@
 //
 
 #import "FlickrManager.h"
+#import "PhotoEntity.h"
 
 
 static NSString *const kFlickrAPIKey = @"ffce5722188b15182473626a96decc2c";
@@ -36,6 +37,7 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
 -(instancetype)init {
     if (self = [super init]) {
         self.photos = [NSMutableArray array];
+        self.photoEntities = [NSMutableArray array];
         self.imageDownloader = [SDWebImageDownloader sharedDownloader];
         self.imageFailedBacklog = [NSMutableArray array];
         self.lastSearchQuery = @"love";
@@ -107,7 +109,7 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
         completion(nil, statError);
     }
     if (photoEntities.count >0) {
-        [self createPhotoURLs:photoEntities];
+        [self createPhotoEntities:photoEntities];
         completion(self.photos, nil);
 
         /*for (int i = 0; i<photoEntities.count; i++) {
@@ -125,12 +127,12 @@ static NSString *const kFlickrSearchURL = @"https://api.flickr.com/services/rest
     }
 }
 
--(void)createPhotoURLs:(NSArray*)photos {
+-(void)createPhotoEntities:(NSArray*)photos {
+    // Create photo Entities and URLs array.
     for(NSDictionary *dic in photos) {
-        // Create photo urls.
-        NSString *urlS = [NSString stringWithFormat:@"https://farm%@.static.flickr.com/%@/%@_%@.jpg", [dic valueForKeyPath:@"farm"], [dic valueForKeyPath:@"server"], [dic valueForKeyPath:@"id"], [dic valueForKeyPath:@"secret"]];
-        NSURL *url = [NSURL URLWithString:urlS];
-        [self.photos addObject:url];
+        PhotoEntity *entity = [[PhotoEntity alloc] initWithDictionary:dic];
+        [self.photos addObject:[entity getPhotoURL]];
+        [self.photoEntities addObject:entity];
     }
 }
 
