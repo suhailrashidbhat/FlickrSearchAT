@@ -1,0 +1,5 @@
+pod 'SDWebImage', '~> 3.7'
+pod 'UIActivityIndicator-for-SDWebImage'
+pod 'DGActivityIndicatorView'
+pod 'SVPullToRefresh'
+pod 'FSImageViewer', '~> 3.4'
