@@ -213,9 +213,11 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
     PhotoCollectionViewCell *cell = (PhotoCollectionViewCell*)[collectionView cellForItemAtIndexPath:indexPath];
-    if (!cell.imageView.image || [cell.imageView.image isEqual:[UIImage imageNamed:@"reload"]]) {
+    [collectionView deselectItemAtIndexPath:indexPath animated:YES];
+
+    if ([cell.imageView.image isEqual:[UIImage imageNamed:@"reload"]]) {
         // Attempt to download again
-        [cell.imageView sd_setImageWithURL:self.photos[indexPath.row]   completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+        [cell.imageView sd_setImageWithURL:self.photos[indexPath.row] placeholderImage:nil options:SDWebImageRetryFailed completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
             [cell.activityIndicator stopAnimating];
             [cell.activityIndicator setHidden:YES];
             [cell.imageView setHidden:NO];
@@ -230,8 +232,7 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
         }];
         return;
     }
-    [collectionView deselectItemAtIndexPath:indexPath animated:YES];
-
+    
     NSMutableArray *fsbImages = [NSMutableArray array];
     for (int i = 0; i<self.photos.count; i++) {
         FSBasicImage *image = [[FSBasicImage alloc] initWithImageURL:self.photos[i]];
@@ -275,8 +276,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
         self.searchBarBoundsY = self.navigationController.navigationBar.frame.size.height + [UIApplication sharedApplication].statusBarFrame.size.height;
         self.searchBar = [[UISearchBar alloc]initWithFrame:CGRectMake(0,self.searchBarBoundsY,[UIScreen mainScreen].bounds.size.width, 44)];
         self.searchBar.searchBarStyle       = UISearchBarStyleMinimal;
-        self.searchBar.tintColor            = [UIColor blackColor];
-        self.searchBar.barTintColor         = [UIColor blackColor];
         self.searchBar.delegate             = self;
         self.searchBar.placeholder          = @"Search Images";
         // add KVO observer.. so we will be informed when user scroll colllectionView
@@ -423,6 +422,9 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
+    if (!self.searchResultsView.isHidden || (([[UIDevice currentDevice] orientation] == UIDeviceOrientationLandscapeRight) || ([[UIDevice currentDevice] orientation] == UIInterfaceOrientationLandscapeLeft))) {
+        return;
+    }
     CGRect frame = self.navigationController.navigationBar.frame;
     CGFloat size = frame.size.height - 21;
     CGFloat framePercentageHidden = ((20 - frame.origin.y) / (frame.size.height - 1));
@@ -480,7 +482,7 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     NSDictionary *attributes = @{
                                  NSUnderlineStyleAttributeName: @1,
                                  NSForegroundColorAttributeName : UIColorFromRGB(0x2398B5),
-                                 NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue-Bold" size:14]
+                                 NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:15]
                                  };
     self.title = @"Flickr Search";
     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[[UIImage imageNamed:@"FlickrLogo"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal]
@@ -529,6 +531,10 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     searchCell.textLabel.textColor = UIColorFromRGB(0x2398B5);
     searchCell.textLabel.font = [UIFont fontWithName:@"HelveticaNeue-Regular" size:17];
     return searchCell;
+}
+
+-(NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+    return @"Recent Searches";
 }
 
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {

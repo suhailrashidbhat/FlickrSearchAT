@@ -19,7 +19,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(askAndClearHistory)];
-    self.historyTable.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
+    self.historyTable.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -73,6 +73,10 @@
     [[FlickrManager sharedManager] setLastSearchQuery:searchItem];
     [[FlickrManager sharedManager] setDataNeedsRefresh:YES];
     [self.navigationController popViewControllerAnimated:YES];
+}
+
+-(NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+    return @"Search History";
 }
 
 @end

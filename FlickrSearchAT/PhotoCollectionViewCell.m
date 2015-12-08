@@ -16,6 +16,7 @@
     self.activityIndicator.center = self.center;
     self.imageView.userInteractionEnabled = YES;
     self.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    self.imageView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth);
     self.activityIndicator.tintColor = UIColorFromRGB(0xF398B5);
     //[self addSubview:self.activityIndicator];  // no need of it for now! 
     [self.activityIndicator startAnimating];
