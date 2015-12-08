@@ -20,7 +20,7 @@
 static NSString* const kCellIdentifier = @"PhotoCell";
 static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=3e7cc266ae2b0e0d78e279ce8e361736&format=json&nojsoncallback=1&text=kittens";
 
-@interface CollectionViewController ()<UISearchBarDelegate, UIScrollViewDelegate>
+@interface CollectionViewController ()<UISearchBarDelegate, UIScrollViewDelegate, UITableViewDelegate, UITableViewDataSource>
 
 @property (nonatomic,strong) NSMutableArray        *photos; // URLs
 @property (nonatomic)        BOOL           searchBarActive;
@@ -31,8 +31,9 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 @property (nonatomic, strong) DGActivityIndicatorView *indicatorView;
 @property (nonatomic) CGFloat previousScrollViewYOffset;
 @property (nonatomic, strong) NSMutableArray *failedImages; // IndexPaths;
-
-@property NSCache *cache;
+@property (nonatomic, strong) UIView *searchResultsView;
+@property (nonatomic, strong) UITableView *searchResultTable;
+@property (nonatomic, strong) NSArray *filteredResults;
 
 @end
 
@@ -43,7 +44,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
     [self initializeUI];
 
-    self.cache = [[NSCache alloc] init];
     self.photos = [NSMutableArray array];
     self.failedImages = [NSMutableArray array];
 
@@ -65,24 +65,14 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.view addSubview:self.indicatorView];
     [self.indicatorView startAnimating];
 
-    NSDictionary *attributes = @{
-                                 NSUnderlineStyleAttributeName: @1,
-                                 NSForegroundColorAttributeName : UIColorFromRGB(0x2398B5),
-                                 NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue-Bold" size:14]
-                                 };
-    self.title = @"Flickr Search";
-
-    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[[UIImage imageNamed:@"FlickrLogo"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal]
-                                                                              style:UIBarButtonItemStylePlain
-                                                                             target:self
-                                                                             action:nil];
-    [self.navigationItem.leftBarButtonItem setEnabled:NO];
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[[UIImage imageNamed:@"history"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal]
-                                                                             style:UIBarButtonItemStylePlain
-                                                                            target:self
-                                                                            action:@selector(historyTapped:)];
-
-    [self.navigationController.navigationBar setTitleTextAttributes:attributes];
+    self.searchResultsView = [[UIView alloc] initWithFrame:CGRectMake(0, self.collectionView.frame.origin.y + 44 + 5, self.collectionView.frame.size.width, self.collectionView.frame.size.height)];
+    self.searchResultTable = [[UITableView alloc] initWithFrame:self.searchResultsView.frame style:UITableViewStylePlain];
+    self.searchResultTable.delegate = self;
+    self.searchResultTable.dataSource = self;
+    [self.searchResultsView addSubview:self.searchResultTable];
+    [self.view addSubview:self.searchResultsView];
+    [self.searchResultsView setHidden:YES];
+    [self addNavigationItems];
     self.navigationController.navigationBarHidden = NO;
     [self.navigationController.navigationBar setTintColor:UIColorFromRGB(0x2398B5)];
     self.view.backgroundColor = [UIColor whiteColor];
@@ -92,8 +82,12 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 -(void)viewWillAppear:(BOOL)animated{
     [super viewWillAppear:animated];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceRotated) name:UIDeviceOrientationDidChangeNotification object:nil];
-    [self addSearchBar];
 
+    [self addSearchBar];
+    self.searchBar.text = [[FlickrManager sharedManager] lastSearchQuery];
+
+    // Check if data needs refresh!
+    
     if ([[FlickrManager sharedManager] dataNeedsRefresh]) {
         [[FlickrManager sharedManager] setDataNeedsRefresh:NO];
         [self.photos removeAllObjects];
@@ -285,7 +279,6 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
         self.searchBar.barTintColor         = [UIColor blackColor];
         self.searchBar.delegate             = self;
         self.searchBar.placeholder          = @"Search Images";
-
         // add KVO observer.. so we will be informed when user scroll colllectionView
         [self addObservers];
     }
@@ -338,6 +331,8 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.collectionView reloadData];
 }
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar{
+    [self.searchResultsView setHidden:YES];
+    [self.collectionView setHidden:NO];
 
     if (!searchBar.text.length) {
         return;
@@ -369,6 +364,7 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 }
 - (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar{
     [self.searchBar setShowsCancelButton:YES animated:YES];
+
 }
 - (void)searchBarTextDidEndEditing:(UISearchBar *)searchBar{
     self.searchBarActive = NO;
@@ -378,6 +374,22 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     self.searchBarActive = NO;
     [self.searchBar resignFirstResponder];
     self.searchBar.text  = @"";
+}
+
+-(void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
+    if(searchBar.text.length) {
+        [self updateFilteredResultsWithString:searchText];
+        [self.searchResultsView setHidden:NO];
+        [self.searchResultTable reloadData];
+    } else {
+        [self.searchResultsView setHidden:YES];
+    }
+}
+
+-(void)updateFilteredResultsWithString:(NSString*)string {
+    NSPredicate* predicate = [NSPredicate predicateWithFormat:@"SELF CONTAINS[cd] %@", string];
+    self.filteredResults = [self.recentArray filteredArrayUsingPredicate:predicate];
+    [self.searchResultTable reloadData];
 }
 
 -(NSString*)sanitizeSearchKeyword:(NSString*)keyword {
@@ -455,10 +467,33 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
 - (void)updateBarButtonItems:(CGFloat)alpha
 {
-    self.navigationItem.leftBarButtonItem.customView.alpha = alpha;
-    self.navigationItem.rightBarButtonItem.customView.alpha = alpha;
-    self.navigationItem.titleView.alpha = alpha;
-    self.navigationController.navigationBar.tintColor = [self.navigationController.navigationBar.tintColor colorWithAlphaComponent:alpha];
+    if (alpha == 0.0) {
+        self.navigationItem.leftBarButtonItem = nil;
+        self.navigationItem.rightBarButtonItem = nil;
+        self.title = nil;
+    } else {
+        [self addNavigationItems];
+    }
+}
+
+-(void)addNavigationItems {
+    NSDictionary *attributes = @{
+                                 NSUnderlineStyleAttributeName: @1,
+                                 NSForegroundColorAttributeName : UIColorFromRGB(0x2398B5),
+                                 NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue-Bold" size:14]
+                                 };
+    self.title = @"Flickr Search";
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[[UIImage imageNamed:@"FlickrLogo"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal]
+                                                                             style:UIBarButtonItemStylePlain
+                                                                            target:self
+                                                                            action:nil];
+    [self.navigationItem.leftBarButtonItem setEnabled:NO];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[[UIImage imageNamed:@"history"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal]
+                                                                              style:UIBarButtonItemStylePlain
+                                                                             target:self
+                                                                             action:@selector(historyTapped:)];
+
+    [self.navigationController.navigationBar setTitleTextAttributes:attributes];
 }
 
 - (void)animateNavBarTo:(CGFloat)y
@@ -472,5 +507,41 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     }];
 }
 
+#pragma mark TableView Delegate and Data Source for Recenet Search
+
+
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return 1;
+}
+
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return self.filteredResults.count;
+}
+
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return 50.0;
+}
+
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    UITableViewCell *searchCell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"searchCell"];
+    searchCell.textLabel.text = self.filteredResults[indexPath.row];
+    searchCell.backgroundColor = [UIColor whiteColor];
+    searchCell.textLabel.textColor = UIColorFromRGB(0x2398B5);
+    searchCell.textLabel.font = [UIFont fontWithName:@"HelveticaNeue-Regular" size:17];
+    return searchCell;
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    [self.view endEditing:YES];
+    self.searchBar.text = self.filteredResults[indexPath.row];
+    [[FlickrManager sharedManager] setLastSearchQuery:self.filteredResults[indexPath.row]];
+    [self.searchResultsView setHidden:YES];
+    [self.collectionView setHidden:YES];
+    [self.photos removeAllObjects];
+    [self.indicatorView setHidden:NO];
+    [self.indicatorView startAnimating];
+    [self refreshData];
+}
 
 @end
