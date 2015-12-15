@@ -281,7 +281,26 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
     [self.navigationController.navigationBar setTintColor:UIColorFromRGB(0x2398B5)];
     self.view.backgroundColor = [UIColor whiteColor];
     self.collectionView.backgroundColor = [UIColor whiteColor];
+
+    if (IS_IOS_9_RANGE) {
+        [self check3DTouch];
+    }
 }
+
+- (BOOL)check3DTouch {
+    // register for 3D Touch (if available)
+    if (self.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable) {
+        [self registerForPreviewingWithDelegate:(id)self sourceView:self.collectionView];
+        NSLog(@"3D Touch is available! Hurra!");
+        // no need for our alternative anymore
+        return YES;
+    } else {
+        NSLog(@"3D Touch is not available on this device. Sniff!");
+        // handle a 3D Touch alternative (long gesture recognizer)
+        return NO;
+    }
+}
+
 
 -(void)scrollToUP {
     [self.collectionView setContentOffset:
@@ -575,14 +594,15 @@ static NSString *const kAPIEndpointURL = @"https://api.flickr.com/services/rest/
 
 -(UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)location {
     NSIndexPath *indexPath = [self.collectionView indexPathForItemAtPoint:location];
-
     PhotoCollectionViewCell *cell = (PhotoCollectionViewCell*)[self.collectionView cellForItemAtIndexPath:indexPath];
-    FSBasicImage *image = [[FSBasicImage alloc] initWithImageURL:self.photos[indexPath.row]];
-    FSBasicImageSource *photoSource = [[FSBasicImageSource alloc] initWithImages:@[image]];
-
+    NSMutableArray *fsbImages = [NSMutableArray array];
+    for (int i = 0; i<self.photos.count; i++) {
+        FSBasicImage *image = [[FSBasicImage alloc] initWithImageURL:self.photos[i]];
+        [fsbImages addObject:image];
+    }
+    FSBasicImageSource *photoSource = [[FSBasicImageSource alloc] initWithImages:fsbImages];
     ImageViewController *imageVC = [[ImageViewController alloc] initWithImageSource:photoSource];
     [imageVC moveToImageAtIndex:indexPath.row animated:NO];
-    [self.navigationController pushViewController:imageVC animated:YES];
     imageVC.preferredContentSize = CGSizeMake(0.0, 320.0);
     previewingContext.sourceRect = cell.frame;
     return imageVC;

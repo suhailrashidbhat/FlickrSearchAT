@@ -18,4 +18,6 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
 
 #define kPageSize 51
 
+#define IS_IOS_9_RANGE ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0)
+
 #endif /* Constants_h */
